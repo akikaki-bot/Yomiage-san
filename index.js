@@ -20,8 +20,11 @@ const {
 const option = {
   intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_VOICE_STATES, Intents.FLAGS.GUILD_MEMBERS]
 }
-const Database = require("@replit/database")
-const db = new Database()
+const Keyv = require('keyv')
+//カスタムデータベース
+const db = new Keyv('sqlite://database.sqlite', {
+  table: 'database'
+})
 const client = new Client(option)
 const {
   VoiceText
