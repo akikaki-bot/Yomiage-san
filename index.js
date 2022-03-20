@@ -33,15 +33,19 @@ const {
   writeFileSync
 } = require('fs');
 //=============== main =====================
-const {
-  main
-} = require('./main.js')
-
+const { main } = require('./lib/main.js')
+const { on } = require('./commands/on.js');
+const { ion } = require('./commands/ion.js')
+const { off } = require('./commands/off.js')
+const { ioff } = require('./commands/ioff.js') 
 //==========================================
 client.on('ready', async () => {
   console.log('Google Teacher v1.0')
   const { generateDependencyReport } = require('@discordjs/voice');
 
+//==============slashcommand================
+ const serverid = "915231600520863804"
+//==========================================
   console.log(generateDependencyReport());
       const data = [
         {
@@ -53,82 +57,60 @@ client.on('ready', async () => {
           description: "TTSをオフにします。"
         }
     ];
-    await client.application.commands.set(data, '536491197305454602');
+    await client.application.commands.set(data, serverid);
 })
 client.on('messageCreate', async message => {
+  //=================MessageEvent=======================
+
   if (message.author.bot || message.channel.type === "dm") return;
-  const voiceText = new VoiceText('APIkey');
+
+  //=================VoiceTextApi=======================
+
+  const voiceText = new VoiceText(process.env.key);
+
+  //=================Main handler=======================
+
   main(db,message,voiceText,createAudioPlayer,createAudioResource,AudioPlayerStatus,writeFileSync,getVoiceConnection,StreamType,joinVoiceChannel)
+
+  //=================commandhandler=====================
+
+  //=================on=================================
+
   if (message.content === ":on") {
-    db.get(`${message.guild.id}_joined`).then(async v => {
-      if (v === true) return message.reply('すでに有効です。')
-      else {
-        const memberVC = message.member.voice.channel;
-        if (!memberVC) return message.reply('参加することが不可能です。')
-        if (!memberVC.joinable) return message.reply('参加できないボイスチャンネルです。')
-        const connection = joinVoiceChannel({
-          guildId: message.guild.id,
-          channelId: message.member.voice.channel.id,
-          adapterCreator: message.guild.voiceAdapterCreator,
-          selfMute: false,
-        });
-        await db.set(`${message.guild.id}_joined`, true).then(() => {
-          message.reply('参加しました。')
-          const embed = new MessageEmbed().setTitle('TTS機能を有効にしました。').setDescription('このTTS読み上げにはvoiceTextのAPIを使用しています。\n 詳しくは公式HPを参考にしてください。\n[《VoiceText公式》](https://cloud.voicetext.jp/webapi)\n\n《注意事項》\n**・開発者はVoiceTextの利用規約に沿ってBOTを運用しています。**\n**・利用により金銭が発生することはありません。**\n**・このAPIで作成した音声はYoutube等で使用、公開することは利用規約により禁止されていますのでご遠慮ください。**')
-          message.reply({
-            embeds: [embed]
-          })
-        })
-      }
-    })
+  on(db,message,joinVoiceChannel,MessageEmbed)
   }
+
+  //=================off================================
+
   if (message.content === ":off") {
-    const memberVC = message.member.voice.channel;
-    if (!memberVC) return message.reply('操作することが不可能です。')
-    if (!memberVC.joinable) return message.reply('操作できないボイスチャンネルです。')
-    db.delete(`${message.guild.id}_joined`).then(() => {
-      const embed = new MessageEmbed().setTitle('TTS機能を無効にしました。').setDescription('このTTS読み上げにはvoiceTextのAPIを使用しています。\n 詳しくは公式HPを参考にしてください。\n[《VoiceText公式》](https://cloud.voicetext.jp/webapi)\n\n《注意事項》\n**・開発者はVoiceTextの利用規約に沿ってBOTを運用しています。**\n**・利用により金銭が発生することはありません。**\n**・このAPIで作成した音声はYoutube等で使用、公開することは利用規約により禁止されていますのでご遠慮ください。**')
-      message.reply({
-        embeds: [embed]
-      })
-    })
+    off(db,message,MessageEmbed)
   }
+
+  //help================================================
+
   if(message.content === ":help"){
     const embed = new MessageEmbed().setTitle('TTSボット').setDescription(':help\n:join\n:off')
     message.channel.send({ embeds: [embed]})
   }
 })
 
-//interaction
+//interaction===========================================
 client.on('interactionCreate', async interaction => {
   if (!interaction.isCommand()) {
         return;
     }
+  //=================on=================================
+
   if (interaction.commandName === "on") {
-    db.get(`${interaction.guild.id}_joined`).then(async v => {
-      if (v === true) return interaction.reply('すでに有効です。')
-      else {
-        const memberVC = interaction.member.voice.channel;
-        if (!memberVC) return interaction.reply('参加することが不可能です。')
-        if (!memberVC.joinable) return interaction.reply('参加できないボイスチャンネルです。')
-        const connection = joinVoiceChannel({
-          guildId: interaction.guild.id,
-          channelId: interaction.member.voice.channel.id,
-          adapterCreator: interaction.guild.voiceAdapterCreator,
-          selfMute: false,
-        });
-        await db.set(`${interaction.guild.id}_joined`, true).then(() => {
-          const embed = new MessageEmbed().setTitle('TTS機能を有効にしました。').setDescription('このTTS読み上げにはvoiceTextのAPIを使用しています。\n 詳しくは公式HPを参考にしてください。\n[《VoiceText公式》](https://cloud.voicetext.jp/webapi)\n\n《注意事項》\n**・開発者はVoiceTextの利用規約に沿ってBOTを運用しています。**\n**・利用により金銭が発生することはありません。**\n**・このAPIで作成した音声はYoutube等で使用、公開することは利用規約により禁止されていますのでご遠慮ください。**')
-          interaction.reply({
-            embeds: [embed]
-          })
-        })
-      }
-    })
-  }interaction
+    ion(db,interaction,joinVoiceChannel,MessageEmbed)
+  }
+
+  //=================off================================
+
   if (interaction.commandName === "off") {
-        const memberVC = interaction.member.voice.channel;
-        if (!memberVC) return interaction.reply('参加することが不可能です。')
+        //ioff(db,interaction,MessageEmbed)
+       const memberVC = interaction.member.voice.channel;
+       if (!memberVC) return interaction.reply('参加することが不可能です。')
         if (!memberVC.joinable) return interaction.reply('参加できないボイスチャンネルです。')
     db.delete(`${interaction.guild.id}_joined`).then(() => {
       const embed = new MessageEmbed().setTitle('TTS機能を無効にしました。').setDescription('このTTS読み上げにはvoiceTextのAPIを使用しています。\n 詳しくは公式HPを参考にしてください。\n[《VoiceText公式》](https://cloud.voicetext.jp/webapi)\n\n《注意事項》\n**・開発者はVoiceTextの利用規約に沿ってBOTを運用しています。**\n**・利用により金銭が発生することはありません。**\n**・このAPIで作成した音声はYoutube等で使用、公開することは利用規約により禁止されていますのでご遠慮ください。**')
