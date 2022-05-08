@@ -9,7 +9,9 @@ const {
   Discord,
   MessageEmbed,
   Client,
-  Intents
+  Intents,
+  MessageActionRow,
+  MessageSelectMenu
 } = require('discord.js')
 // まじでvoice分離するなはげ！
 const {
@@ -29,7 +31,8 @@ const {
 } = require('voice-text')
 
 const {
-  writeFileSync
+  writeFileSync,
+  createWriteStream
 } = require('fs');
 
 const option = {
@@ -43,6 +46,10 @@ const db = new Keyv('sqlite://database.sqlite', {
 const dic = new Keyv('sqlite://dic.sqlite', {
   table: 'dictionary'
 })
+const sp = new Keyv('sqlite://dic.sqlite', {
+  table: 'speaker'
+})
+
 const client = new Client(option)
 
 //=============== main =====================
@@ -52,9 +59,14 @@ const { ion } = require('./commands/ion.js')
 const { off } = require('./commands/off.js')
 const { ioff } = require('./commands/ioff.js')
 const { dictionary } = require('./commands/dictionary.js') 
+const { speakch } = require('./commands/speakch.js')
+const { changesp } = require('./commands/changesp.js')
 //const { join } = require('./lib/join.js')
 //==========================================
 client.on('ready', async () => {
+  client.user.setActivity({
+    name:"/on | VoiceTextを使用したTTSBotです。"
+  })
   console.log('Google Teacher v1.0')
   const { generateDependencyReport } = require('@discordjs/voice');
 
@@ -92,11 +104,19 @@ client.on('ready', async () => {
         {
           name: "dictionary_remove",
           description: "辞書をすべて消します。"
-        }
+        },
+        {
+          name: "speaker_change",
+          description: "話す人を変えます。デフォ: haruka",
+          
+        },
     ];
     await client.application.commands.set(data);
 })
 client.on('messageCreate', async message => {
+
+  const spea = await sp.get(`${message.guild.id}`)
+  if(!spea) return sp.set(`${message.guild.id}`,"haruka")
   //=================MessageEvent=======================
 
   if (message.author.bot || message.channel.type === "dm") return;
@@ -120,7 +140,7 @@ client.on('messageCreate', async message => {
   
   //=================Main handler=======================
 
- try{ main(db,message,voiceText,createAudioPlayer,createAudioResource,AudioPlayerStatus,writeFileSync,getVoiceConnection,StreamType,joinVoiceChannel,dic)
+ try{ main(db,message,voiceText,createAudioPlayer,createAudioResource,AudioPlayerStatus,writeFileSync,getVoiceConnection,StreamType,joinVoiceChannel,dic,sp,createWriteStream)
     }catch(e){
    console.log(e.message)
     }
@@ -151,6 +171,11 @@ if(message.content === ":tst"){
 
 //interaction===========================================
 client.on('interactionCreate', async interaction => {
+
+  if(interaction.customId === "chsp"){
+    changesp(interaction,sp,MessageEmbed)
+  }
+  
   if (!interaction.isCommand()) {
         return;
     }
@@ -170,11 +195,17 @@ client.on('interactionCreate', async interaction => {
     dictionary(interaction,dic)
   }
 
+  if(interaction.commandName === "speaker_change"){
+    speakch(interaction,MessageEmbed,sp,MessageActionRow,MessageSelectMenu)
+  }
+
   if(interaction.commandName === "dictionary_remove"){
    await dic.delete(`${interaction.guild.id}_words`)
    await dic.delete(`${interaction.guild.id}_speak`)
     await interaction.reply('リセットしました。')
   }
+
+
 
   
 })
