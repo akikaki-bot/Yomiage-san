@@ -46,7 +46,7 @@ const db = new Keyv('sqlite://database.sqlite', {
 const dic = new Keyv('sqlite://dic.sqlite', {
   table: 'dictionary'
 })
-const sp = new Keyv('sqlite://dic.sqlite', {
+const sp = new Keyv('sqlite://speaker.sqlite', {
   table: 'speaker'
 })
 
@@ -159,6 +159,21 @@ if(message.content === ":tst"){
 
   if (message.content === ":off") {
     off(db,message,MessageEmbed)
+  }
+
+  if(message.content === ".heart"){
+    const msg = await message.channel.messages.fetch({ before: message.id, limit: 1 })
+     .then(messages => messages.first())
+     .catch(console.error)
+    msg.react('⭐')
+    msg.react('🤜')
+    msg.react('🛠️')
+    msg.react('👾')
+    msg.react('🎈')
+    msg.react('🔧')
+    msg.react('⚠️')
+    msg.react('😱')
+    msg.react('🤗')
   }
 
   //help================================================
