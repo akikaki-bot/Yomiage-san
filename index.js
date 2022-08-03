@@ -50,17 +50,18 @@ const sp = new Keyv('sqlite://speaker.sqlite', {
   table: 'speaker'
 })
 
+
+
 const client = new Client(option)
 
 //=============== main =====================
 const { main } = require('./lib/main.js')
-const { on } = require('./commands/on.js');
 const { ion } = require('./commands/ion.js')
-const { off } = require('./commands/off.js')
 const { ioff } = require('./commands/ioff.js')
 const { dictionary } = require('./commands/dictionary.js') 
 const { speakch } = require('./commands/speakch.js')
 const { changesp } = require('./commands/changesp.js')
+const { user } = require('./commands/use.js')
 //const { join } = require('./lib/join.js')
 //==========================================
 client.on('ready', async () => {
@@ -110,13 +111,24 @@ client.on('ready', async () => {
           description: "話す人を変えます。デフォ: haruka",
           
         },
+        {
+          name: "help",
+          description: "ヘルプページ。"
+        },
+        {
+          name: "status",
+          description: "利用状況確認。"
+        }
     ];
     await client.application.commands.set(data);
 })
+
+
 client.on('messageCreate', async message => {
 
   const spea = await sp.get(`${message.guild.id}`)
   if(!spea) return sp.set(`${message.guild.id}`,"haruka")
+  
   //=================MessageEvent=======================
 
   if (message.author.bot || message.channel.type === "dm") return;
@@ -125,19 +137,6 @@ client.on('messageCreate', async message => {
 
   const voiceText = new VoiceText(process.env.key);
 
-  //================= CLI ENT ==========================
-  //join(client)
-  //====================================================
- const dis = async (client) => {
-   const dc = await client.voice.adapters.get(message.guild.id)
-   console.log(dc)
-   dc.destory
-    //const embed = new MessageEmbed().setTitle('TTS機能を無効にしました。').setDescription('このTTS読み上げにはvoiceTextのAPIを使用しています。\n 詳しくは公式HPを参考にしてください。\n[《VoiceText公式》](https://cloud.voicetext.jp/webapi)\n\n《注意事項》\n**・開発者はVoiceTextの利用規約に沿ってBOTを運用しています。**\n**・利用により金銭が発生することはありません。**\n**・このAPIで作成した音声はYoutube等で使用、公開することは利用規約により禁止されていますのでご遠慮ください。**')
-    //message.channel.send({
-    //  embeds:[embed]
-   // })
-   }
-  
   //=================Main handler=======================
 
  try{ main(db,message,voiceText,createAudioPlayer,createAudioResource,AudioPlayerStatus,writeFileSync,getVoiceConnection,StreamType,joinVoiceChannel,dic,sp,createWriteStream)
@@ -145,41 +144,10 @@ client.on('messageCreate', async message => {
    console.log(e.message)
     }
 
-  //=================commandhandler=====================
-if(message.content === ":tst"){
-  dis(client)
-}
-  //=================on=================================
-
-  if (message.content === ":on") {
-  on(db,message,joinVoiceChannel,MessageEmbed)
-  }
-
-  //=================off================================
-
-  if (message.content === ":off") {
-    off(db,message,MessageEmbed)
-  }
-
-  if(message.content === ".heart"){
-    const msg = await message.channel.messages.fetch({ before: message.id, limit: 1 })
-     .then(messages => messages.first())
-     .catch(console.error)
-    msg.react('⭐')
-    msg.react('🤜')
-    msg.react('🛠️')
-    msg.react('👾')
-    msg.react('🎈')
-    msg.react('🔧')
-    msg.react('⚠️')
-    msg.react('😱')
-    msg.react('🤗')
-  }
-
   //help================================================
 
   if(message.content === ":help"){
-    const embed = new MessageEmbed().setTitle('TTSボット').setDescription(':help\n:join\n:off')
+    const embed = new MessageEmbed().setTitle('VoiceText - TextToSpeachBot v3.0.1').addField('/on','TTS機能を有効化します。\nユーザーのDefaultの音声は`hikari Normal`です。').addField('/off','TTS機能を無効化します。').addField('/speaker_change','話す人を変更できます。\n・選択できる感情\n `Happiness`, `Angry`, `Sadness`\n※感情は「しょう」には存在しません。\n・選択できる話す人\n`はるか`,`しょう`, `ひかり (Default)`,`たける`,`さんた`,`くま`').addField("/dictionary [Word] [読み上げ方]",'辞書機能です。読み方を変更できます。').addField("/dictionary_remove",'辞書データをすべて削除します。').setColor('GREEN')
     message.channel.send({ embeds: [embed]})
   }
 })
@@ -190,20 +158,28 @@ client.on('interactionCreate', async interaction => {
   if(interaction.customId === "chsp"){
     changesp(interaction,sp,MessageEmbed)
   }
+
   
   if (!interaction.isCommand()) {
         return;
     }
+  //help
+
+  if(interaction.commandName === "help"){
+        const embed = new MessageEmbed().setTitle('VoiceText - TextToSpeachBot v3.0.1').addField('/on','TTS機能を有効化します。\nユーザーのDefaultの音声は`hikari Normal`です。').addField('/off','TTS機能を無効化します。').addField('/speaker_change','話す人を変更できます。\n・選択できる感情\n `Happiness`, `Angry`, `Sadness`\n※感情は「しょう」には存在しません。\n・選択できる話す人\n`はるか`,`しょう`, `ひかり (Default)`,`たける`,`さんた`,`くま`').addField("/dictionary [Word] [読み上げ方]",'辞書機能です。読み方を変更できます。').addField("/dictionary_remove",'辞書データをすべて削除します。').setColor('GREEN')
+    interaction.reply({ embeds: [embed]})
+  }
+  
   //=================on=================================
 
   if (interaction.commandName === "on") {
-    ion(db,interaction,joinVoiceChannel,MessageEmbed)
+    ion(db,interaction,joinVoiceChannel,MessageEmbed,StreamType,createAudioResource,createAudioPlayer)
   }
 
   //=================off================================
 
   if (interaction.commandName === "off") {
-    ioff(db,interaction,MessageEmbed)
+    ioff(joinVoiceChannel,db,interaction,MessageEmbed)
   }
 
   if(interaction.commandName === "dictionary"){
@@ -212,6 +188,10 @@ client.on('interactionCreate', async interaction => {
 
   if(interaction.commandName === "speaker_change"){
     speakch(interaction,MessageEmbed,sp,MessageActionRow,MessageSelectMenu)
+  }
+
+  if(interaction.commandName === "status"){
+    interaction.reply('準備中だあほ')
   }
 
   if(interaction.commandName === "dictionary_remove"){
